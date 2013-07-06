@@ -16,8 +16,8 @@ namespace mad_n {
 
 #define PORT_DATA_MAD 31000
 
-Drum::Drum(int** buf, unsigned num, const sockaddr_in& bagAddr, int idMad,
-		unsigned p_sec, unsigned p_usec) :
+Drum::Drum(std::vector<int*>& dat, const sockaddr_in& bagAddr, int idMad,
+		int* gbuf, unsigned p_sec, unsigned p_usec) :
 		bagAddr_(bagAddr), idMad_(idMad), count_(0), mode_(SILENCE), isRun_(
 				false), timeTrans_(0) {
 	sockaddr_in addr;
@@ -34,27 +34,33 @@ Drum::Drum(int** buf, unsigned num, const sockaddr_in& bagAddr, int idMad,
 		exit(1);
 	}
 	if (p_usec > 1000000 || p_usec < 0 || p_sec < 0) {
-		std::cout << "Неверно задан период следования пакетов\n";
+		std::cout << "Incorrectly specified period of packets\n";
 		exit(1);
 	} else {
 		period_.tv_sec = p_sec;
 		period_.tv_usec = p_usec;
 	}
 	dataUnit* pdat = new dataUnit;
-	for (unsigned i = 0; i < num; i++) {
-		memcpy(pdat->sampl, buf[i], sizeof(pdat->sampl));
+	for (unsigned i = 0; i < dat.size(); i++) {
+		memcpy(pdat->sampl, dat[i], sizeof(pdat->sampl));
+		delete[] dat[i];
 		pdat->amountCount = SIZE_SAMPL;
 		pdat->id_MAD = idMad_;
 		pdat->ident = SIGNAL_SAMPL;
 		pdat->mode = MODE;
 		fifo_.push_back(*pdat);
 	}
+	dat.clear();
+	if (gbuf)
+		passGoldPackage(gbuf);
 	delete pdat;
 	return;
 }
 
-void Drum::passGoldPackage(const int** buf) {
-	memcpy(packNeutrino_.sampl, *buf, sizeof(packNeutrino_.sampl));
+void Drum::passGoldPackage(const int* buf) {
+	packNeutrino_ = new dataUnit;
+	memcpy(packNeutrino_->sampl, buf, sizeof(packNeutrino_->sampl));
+	delete[] buf;
 	return;
 }
 
@@ -63,10 +69,13 @@ void Drum::main(Timeval t) {
 	if (isRun_ && t >= timeTrans_) {
 		if (!jobs_.empty() && t >= *jobs_.begin()) {
 			//передача золотого пакета
-			packNeutrino_.numFirstCount = count_;
-			sendto(sock_, reinterpret_cast<void*>(&packNeutrino_),
-					sizeof(packNeutrino_), 0,
-					reinterpret_cast<sockaddr*>(&bagAddr_), sizeof(bagAddr_));
+			if (packNeutrino_) {
+				packNeutrino_->numFirstCount = count_;
+				sendto(sock_, reinterpret_cast<void*>(&packNeutrino_),
+						sizeof(packNeutrino_), 0,
+						reinterpret_cast<sockaddr*>(&bagAddr_),
+						sizeof(bagAddr_));
+			}
 			do {
 				jobs_.pop_front();
 			} while (!jobs_.empty() && *jobs_.begin() < timeTrans_);
@@ -102,6 +111,7 @@ void Drum::putTimeStamp(Timeval& t) {
 
 Drum::~Drum() {
 	fifo_.clear();
+	delete packNeutrino_;
 	return;
 }
 

@@ -16,6 +16,7 @@
 #include <arpa/inet.h>
 #include <deque>
 #include <list>
+#include <vector>
 
 namespace mad_n {
 
@@ -102,7 +103,7 @@ class Drum {
 		int sampl[SIZE_SAMPL * 4]; //массив отсчётов
 	};
 	std::deque<dataUnit> fifo_;	//очередь пакетов
-	dataUnit packNeutrino_; //пакет содержащий нейтрино
+	dataUnit *packNeutrino_; //пакет содержащий нейтрино
 	sockaddr_in bagAddr_;	//адрес БЭГ
 	int idMad_; //идентификатор МАД
 	int count_; //номер текущего первого отсчёта пакета
@@ -117,10 +118,11 @@ class Drum {
 	Timeval period_; //период передачи пакетов
 	std::list<Timeval> jobs_; //сюда добавляются моменты времени,когда необходимо передать золотой пакет
 public:
-	void passGoldPackage(const int** buf);
-	Drum(int** buf, unsigned num, const sockaddr_in& bagAddr, int idMad,
-			unsigned p_sec = 0, unsigned p_usec = 5); /*передаётся массив буферов, содержащих отсчёты;
-			 также передаётся адрес БЭГ и идентификатор МАД, период следования пакетов*/
+	void passGoldPackage(const int* buf);
+	Drum(std::vector<int*>& dat, const sockaddr_in& bagAddr, int idMad,
+			int* gbuf = NULL, unsigned p_sec = 0, unsigned p_usec = 5); /*передаётся вектор буферов, содержащих отсчёты
+			 (в конструкторе производится освобождение памяти элементов вектора, после чего вектор очищается;
+			 также передаётся адрес БЭГ и идентификатор МАД, , буфер золотого пакета, период следования пакетов*/
 	void main(Timeval t); //основной цикл программы, в который передаётся текущее время
 	void putTimeStamp(Timeval& t);
 	virtual ~Drum();
