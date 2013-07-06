@@ -69,34 +69,17 @@ void Drum::main(Timeval t) {
 	if (isRun_ && t >= timeTrans_) {
 		if (!jobs_.empty() && t >= *jobs_.begin()) {
 			//передача золотого пакета
-			if (packNeutrino_) {
-				packNeutrino_->numFirstCount = count_;
-				sendto(sock_, reinterpret_cast<void*>(&packNeutrino_),
-						sizeof(packNeutrino_), 0,
-						reinterpret_cast<sockaddr*>(&bagAddr_),
-						sizeof(bagAddr_));
-			}
+			transGoldPack();
 			do {
 				jobs_.pop_front();
 			} while (!jobs_.empty() && *jobs_.begin() < timeTrans_);
-		} else {
+		} else
 			//передача простого пакета
-			if (!fifo_.empty()) {
-				fifo_.front().numFirstCount = count_;
-				sendto(sock_, reinterpret_cast<void*>(&fifo_.front()),
-						sizeof(dataUnit), 0,
-						reinterpret_cast<sockaddr*>(&bagAddr_),
-						sizeof(bagAddr_));
-				fifo_.push_back(fifo_.front());
-				fifo_.pop_front();
-			}
-		}
-		count_ += SIZE_SAMPL;
-		if (count_ >= LIMIT_COUNT_SAMPL)
-			count_ = 0;
+			transSimplePack();
 		timeTrans_ += period_;
 
 	}
+	return;
 }
 
 void Drum::putTimeStamp(Timeval& t) {
@@ -106,6 +89,43 @@ void Drum::putTimeStamp(Timeval& t) {
 	t = timeTrans_ + period_ * static_cast<int>(n_per);
 	jobs_.push_back(t);
 	jobs_.sort();
+	return;
+}
+
+void Drum::oneShot(void) {
+	transSimplePack();
+	return;
+}
+
+void Drum::transSimplePack(void) {
+	if (!fifo_.empty()) {
+		fifo_.front().numFirstCount = count_;
+		sendto(sock_, reinterpret_cast<void*>(&fifo_.front()), sizeof(dataUnit),
+				0, reinterpret_cast<sockaddr*>(&bagAddr_), sizeof(bagAddr_));
+		fifo_.push_back(fifo_.front());
+		fifo_.pop_front();
+	}
+
+	count_ += SIZE_SAMPL;
+	if (count_ >= LIMIT_COUNT_SAMPL)
+		count_ = 0;
+	return;
+}
+
+void Drum::oneShotGold(void) {
+	transGoldPack();
+}
+
+void Drum::transGoldPack(void) {
+	if (packNeutrino_) {
+		packNeutrino_->numFirstCount = count_;
+		sendto(sock_, reinterpret_cast<void*>(&packNeutrino_),
+				sizeof(packNeutrino_), 0,
+				reinterpret_cast<sockaddr*>(&bagAddr_), sizeof(bagAddr_));
+		count_ += SIZE_SAMPL;
+		if (count_ >= LIMIT_COUNT_SAMPL)
+			count_ = 0;
+	}
 	return;
 }
 

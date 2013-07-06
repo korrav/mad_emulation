@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
 		}
 	}
 	std::cout << "In the drum fueled " << countP << " packets\n";
-	int* gbuf; //указатель на золотой пакет
+	int* gbuf = NULL; //указатель на золотой пакет
 	if (!gF.empty()) {
 		streamF.open(gF.c_str(), std::ios::in | std::ios::binary);
 		if (!streamF.is_open()) {
@@ -109,5 +109,7 @@ int main(int argc, char** argv) {
 }
 
 void handlCom(mad_n::Drum& drum) {
+	std::string comlin;
+	std::getline(std::cin, comlin);
 	return;
 }
