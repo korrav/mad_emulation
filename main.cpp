@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <vector>
 #include "dirent.h"
 
@@ -21,6 +22,7 @@
 /*Опции командной строки: id идентификатор МАД; nf количество файлов с данными отсчётов; dir - папка с файлами;
  * gold файл с золотым пакетом
  */
+void handlCom(mad_n::Drum& drum); //обработка команд оператора
 int main(int argc, char** argv) {
 	unsigned p_sec = 0, p_usec = 1000000 / FREQUENCY;
 	int idMad = 1;
@@ -90,6 +92,22 @@ int main(int argc, char** argv) {
 	}
 	//создание Drum
 	mad_n::Drum drum(data, addrBag, idMad, gbuf, p_sec, p_usec);
+	//ГЛАВНЫЙ ЦИКЛ
+	fd_set fdin;
+	timeval nullpause = { 0, 0 };
+	mad_n::Timeval loctime;
+	for (;;) {
+		FD_ZERO(&fdin);
+		FD_SET(STDIN_FILENO, &fdin);
+		select(STDIN_FILENO + 1, &fdin, NULL, NULL, &nullpause);
+		if (FD_ISSET(STDIN_FILENO, &fdin))
+			handlCom(drum);
+		gettimeofday(&loctime, NULL);
+		drum.main(loctime);
+	}
 	return 0;
 }
 
+void handlCom(mad_n::Drum& drum) {
+	return;
+}
