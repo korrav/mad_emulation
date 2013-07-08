@@ -19,6 +19,9 @@
 #define FREQUENCY 187500 //скорость дискретизации
 #define PREFIX "data" //префикс для файлов данных
 #define SIZE_DATA_FILE (SIZE_SAMPL * 4 * sizeof(int)) //размер файла данных
+//команды оператора
+static const std::string SHOT = "shot"; //передача одного пакета данных
+static const std::string SHOTG = "shotg"; //единичная передача золотого пакета
 /*Опции командной строки: id идентификатор МАД; nf количество файлов с данными отсчётов; dir - папка с файлами;
  * gold файл с золотым пакетом
  */
@@ -111,5 +114,13 @@ int main(int argc, char** argv) {
 void handlCom(mad_n::Drum& drum) {
 	std::string comlin;
 	std::getline(std::cin, comlin);
+	if (comlin == SHOT) {
+		drum.oneShot();
+		std::cout << "Передан один пакет данных\n";
+	} else if (comlin == SHOTG) {
+		drum.oneShotGold();
+		std::cout << "Передан один золотой пакет данных\n";
+	} else
+		std::cout << "Неизвестная команда\n";
 	return;
 }
