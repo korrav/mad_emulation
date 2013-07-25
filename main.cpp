@@ -73,18 +73,29 @@ int main(int argc, char** argv) {
 		perror("There is no way to open a directory\n");
 		exit(1);
 	}
-	for (; (countP == -1 || countP < numF) && (fileD = readdir(sd)); countP++) {
+	for (; (countP == -1 || countP < numF) && (fileD = readdir(sd));) {
 		file = fileD->d_name;
 		if (!file.compare(0, strlen(prefix.c_str()), prefix)) {
-			stat(file.c_str(), &statF);
-			if (statF.st_size != SIZE_DATA_FILE)
+			if (stat((file = dir + "/" + file).c_str(), &statF) == -1) {
+				std::cout << "Для файла " << file << std::endl;
+				perror("stat");
+				exit(1);
+			}
+			if (statF.st_size != SIZE_DATA_FILE) {
+				std::cout << "Размер файла " << file << " не равен "
+						<< SIZE_DATA_FILE << " байт, а равен " << statF.st_size
+						<< " байт\n";
 				continue;
+			}
 			streamF.open(file.c_str(), std::ios::in | std::ios::binary);
-			if (!streamF.is_open())
+			if (!streamF.is_open()) {
+				std::cout << "Невозможно открыть файл " << file << std::endl;
 				continue;
+			}
 			int* buf = new int[SIZE_SAMPL * 4];
 			streamF.read((char*) buf, SIZE_DATA_FILE);
 			data.push_back(buf);
+			countP++;
 			streamF.close();
 		}
 	}
