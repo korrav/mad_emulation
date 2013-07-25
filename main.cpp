@@ -24,13 +24,14 @@ static const std::string SHOT = "shot"; //передача одного паке
 static const std::string SHOTG = "shotg"; //единичная передача золотого пакета
 static const std::string GET_NUM_PACK = "g_num_pack"; //определить сколько обычных пакетов данных находится в барабане
 /*Опции командной строки: id идентификатор МАД; nf количество файлов с данными отсчётов; dir - папка с файлами;
- * gold файл с золотым пакетом
+ * gold файл с золотым пакетом; pref префикс файлов данных
  */
 void handlCom(mad_n::Drum& drum); //обработка команд оператора
 int main(int argc, char** argv) {
 	unsigned p_sec = 0, p_usec = 1000000 / FREQUENCY;
 	int idMad = 1;
 	int numF = -1;
+	std::string prefix = ""; //префикс файлов данных
 
 	std::string dir = "./";
 	std::string gF = "";
@@ -44,6 +45,10 @@ int main(int argc, char** argv) {
 			dir = argv[i + 1];
 		else if (!strcmp("--gold", argv[i]))
 			gF = argv[i + 1];
+		else if (!strcmp("--pref", argv[i]))
+			prefix = argv[i + 1];
+		else
+			std::cout << argv[i] << " - неизвестный параметр\n";
 	}
 	//инициализация адреса БЭГ
 	sockaddr_in addrBag;
@@ -59,8 +64,7 @@ int main(int argc, char** argv) {
 	DIR* sd;
 	dirent *fileD;
 	int countP = 0;
-	std::string file;
-	std::string prefix;
+	std::string file; //имя файла данных
 	struct stat statF;
 	std::ifstream streamF;
 	std::vector<int*> data;
