@@ -22,6 +22,7 @@
 //команды оператора
 static const std::string SHOT = "shot"; //передача одного пакета данных
 static const std::string SHOTG = "shotg"; //единичная передача золотого пакета
+static const std::string GET_NUM_PACK = "g_num_pack"; //определить сколько обычных пакетов данных находится в барабане
 /*Опции командной строки: id идентификатор МАД; nf количество файлов с данными отсчётов; dir - папка с файлами;
  * gold файл с золотым пакетом
  */
@@ -120,6 +121,9 @@ void handlCom(mad_n::Drum& drum) {
 	} else if (comlin == SHOTG) {
 		drum.oneShotGold();
 		std::cout << "Передан один золотой пакет данных\n";
+	} else if (comlin == GET_NUM_PACK) {
+		std::cout << "Всего в барабан заправлено " << drum.getPackageInDrum()
+				<< " пакетов данных\n";
 	} else
 		std::cout << "Неизвестная команда\n";
 	return;

@@ -129,6 +129,7 @@ public:
 	void oneShotGold(void); //принудительная передача золотого пакета данных
 	void transSimplePack(void); //передача простого пакета данных
 	void transGoldPack(void); //передача золотого пакета данных
+	int getPackageInDrum(void); //количество пакетов в барабане
 	virtual ~Drum();
 };
 

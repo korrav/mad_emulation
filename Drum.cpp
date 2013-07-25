@@ -129,6 +129,10 @@ void Drum::transGoldPack(void) {
 	return;
 }
 
+int Drum::getPackageInDrum(void) {
+	return fifo_.size();
+}
+
 Drum::~Drum() {
 	fifo_.clear();
 	delete packNeutrino_;
