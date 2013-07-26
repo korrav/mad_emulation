@@ -121,7 +121,8 @@ void Drum::transSimplePack(void) {
 		}
 		fifo_.push_back(fifo_.front());
 		fifo_.pop_front();
-		std::cout << "Передан один пакет данных\n";
+		std::cout << "Передан один пакет данных с номером первого отсчёта "
+				<< fifo_.front().numFirstCount << std::endl;
 	}
 
 	count_ += SIZE_SAMPL;
@@ -148,7 +149,9 @@ void Drum::transGoldPack(void) {
 		count_ += SIZE_SAMPL;
 		if (count_ >= LIMIT_COUNT_SAMPL)
 			count_ = 0;
-		std::cout << "Передан один золотой пакет данных\n";
+		std::cout
+				<< "Передан один золотой пакет данных с номером первого отсчёта "
+				<< packNeutrino_->numFirstCount << std::endl;
 	} else
 		std::cout << "Нет в наличии золотого пакета данных\n";
 	return;
