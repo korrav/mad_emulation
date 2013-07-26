@@ -14,7 +14,7 @@
 
 namespace mad_n {
 
-#define PORT_DATA_MAD 31000
+#define PORT_DATA_MAD 31001
 
 Drum::Drum(std::vector<int*>& dat, const sockaddr_in& bagAddr, int idMad,
 		int* gbuf, unsigned p_sec, unsigned p_usec) :
@@ -31,6 +31,13 @@ Drum::Drum(std::vector<int*>& dat, const sockaddr_in& bagAddr, int idMad,
 	addr.sin_addr.s_addr = htonl(INADDR_ANY );
 	if (bind(sock_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr))) {
 		perror("socket not bind\n");
+		exit(1);
+	}
+	//установка размера передающего буфера
+	int sizeTBUF = sizeof(dataUnit) + 2;
+	if (setsockopt(sock_, SOL_SOCKET, SO_SNDBUF, &sizeTBUF, sizeof(int))
+			== -1) {
+		perror("Изменение размера буфера передающего буфера не удалось\n");
 		exit(1);
 	}
 	if (p_usec > 1000000 || p_usec < 0 || p_sec < 0) {
@@ -60,6 +67,10 @@ Drum::Drum(std::vector<int*>& dat, const sockaddr_in& bagAddr, int idMad,
 void Drum::passGoldPackage(const int* buf) {
 	packNeutrino_ = new dataUnit;
 	memcpy(packNeutrino_->sampl, buf, sizeof(packNeutrino_->sampl));
+	packNeutrino_->amountCount = SIZE_SAMPL;
+	packNeutrino_->id_MAD = idMad_;
+	packNeutrino_->ident = SIGNAL_SAMPL;
+	packNeutrino_->mode = MODE;
 	delete[] buf;
 	return;
 }
@@ -98,12 +109,19 @@ void Drum::oneShot(void) {
 }
 
 void Drum::transSimplePack(void) {
+	int err;
 	if (!fifo_.empty()) {
 		fifo_.front().numFirstCount = count_;
-		sendto(sock_, reinterpret_cast<void*>(&fifo_.front()), sizeof(dataUnit),
-				0, reinterpret_cast<sockaddr*>(&bagAddr_), sizeof(bagAddr_));
+		err = sendto(sock_, reinterpret_cast<void*>(&fifo_.front()),
+				sizeof(dataUnit), 0, reinterpret_cast<sockaddr*>(&bagAddr_),
+				sizeof(bagAddr_));
+		if (err == -1) {
+			perror("Передача простого пакета данных окончилась неудачей");
+			exit(1);
+		}
 		fifo_.push_back(fifo_.front());
 		fifo_.pop_front();
+		std::cout << "Передан один пакет данных\n";
 	}
 
 	count_ += SIZE_SAMPL;
@@ -117,15 +135,22 @@ void Drum::oneShotGold(void) {
 }
 
 void Drum::transGoldPack(void) {
+	int err;
 	if (packNeutrino_) {
 		packNeutrino_->numFirstCount = count_;
-		sendto(sock_, reinterpret_cast<void*>(&packNeutrino_),
-				sizeof(packNeutrino_), 0,
-				reinterpret_cast<sockaddr*>(&bagAddr_), sizeof(bagAddr_));
+		err = sendto(sock_, reinterpret_cast<void*>(packNeutrino_),
+				sizeof(dataUnit), 0, reinterpret_cast<sockaddr*>(&bagAddr_),
+				sizeof(bagAddr_));
+		if (err == -1) {
+			perror("Передача золотого пакета данных окончилась неудачей");
+			exit(1);
+		}
 		count_ += SIZE_SAMPL;
 		if (count_ >= LIMIT_COUNT_SAMPL)
 			count_ = 0;
-	}
+		std::cout << "Передан один золотой пакет данных\n";
+	} else
+		std::cout << "Нет в наличии золотого пакета данных\n";
 	return;
 }
 

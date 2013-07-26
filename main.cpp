@@ -15,7 +15,7 @@
 #include "dirent.h"
 
 #define PORT_DATA_BAG 31001
-#define IP_BAG "192.168.203.30" //ip БЭГ
+#define IP_BAG "192.168.127.30" //ip БЭГ
 #define FREQUENCY 187500 //скорость дискретизации
 #define PREFIX "data" //префикс для файлов данных
 #define SIZE_DATA_FILE (SIZE_SAMPL * 4 * sizeof(int)) //размер файла данных
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 	sockaddr_in addrBag;
 	addrBag.sin_family = AF_INET;
 	addrBag.sin_port = htons(PORT_DATA_BAG);
-	char ipBag[15] = IP_BAG;
+	char ipBag[16] = IP_BAG;
 	if (inet_pton(AF_INET, ipBag,
 			reinterpret_cast<void*>(&addrBag.sin_addr.s_addr)) != 1) {
 		std::cerr << "name of address bag not create\n";
@@ -103,11 +103,14 @@ int main(int argc, char** argv) {
 	int* gbuf = NULL; //указатель на золотой пакет
 	if (!gF.empty()) {
 		streamF.open(gF.c_str(), std::ios::in | std::ios::binary);
-		if (!streamF.is_open()) {
+		if (streamF.is_open()) {
 			gbuf = new int[SIZE_SAMPL * 4];
 			streamF.read((char*) gbuf, SIZE_DATA_FILE);
 			streamF.close();
-		}
+			std::cout << "Получен золотой пакет из файла " << gF << std::endl;
+		} else
+			std::cout << "Невозможно открыть файл " << gF
+					<< " , содержащий золотой пакет\n";
 	}
 	//создание Drum
 	mad_n::Drum drum(data, addrBag, idMad, gbuf, p_sec, p_usec);
@@ -130,13 +133,11 @@ int main(int argc, char** argv) {
 void handlCom(mad_n::Drum& drum) {
 	std::string comlin;
 	std::getline(std::cin, comlin);
-	if (comlin == SHOT) {
+	if (comlin == SHOT)
 		drum.oneShot();
-		std::cout << "Передан один пакет данных\n";
-	} else if (comlin == SHOTG) {
+	else if (comlin == SHOTG)
 		drum.oneShotGold();
-		std::cout << "Передан один золотой пакет данных\n";
-	} else if (comlin == GET_NUM_PACK) {
+	else if (comlin == GET_NUM_PACK) {
 		std::cout << "Всего в барабан заправлено " << drum.getPackageInDrum()
 				<< " пакетов данных\n";
 	} else
